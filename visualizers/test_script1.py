@@ -27,6 +27,8 @@ CHANNELS = 1
 RATE = 44100
 CHUNK = 1024
 ROLLING_WINDOW = 50  # Size of the rolling window for calculating the rolling average
+ROLLING_WINDOW_RATIO = 0.05  # Ratio of the chunk size for the rolling window
+
 
 
 # Visual parameters
@@ -56,7 +58,8 @@ x = np.arange(0, 2 * CHUNK, 2)
 lines = ax.plot(x, np.random.rand(CHUNK), alpha=0.8, color="red")
 
 # Initialize rolling average
-rolling_average = np.zeros(ROLLING_WINDOW)
+rolling_window_size = int(ROLLING_WINDOW_RATIO * CHUNK)
+rolling_average = np.zeros(rolling_window_size)
 
 # Update function
 def update_plot(frame):
@@ -66,10 +69,9 @@ def update_plot(frame):
     rolling_average[:-1] = rolling_average[1:]  # Shift values to the left
     rolling_average[-1] = np.mean(np.abs(data))  # Calculate new rolling average
 
-
     for line in lines:
         # Set data for each line
-        line.set_ydata(rolling_average)  # Using this as a filter
+        line.set_ydata(rolling_average)
 
         # Adjust opacity
         alpha = line.get_alpha()
@@ -81,10 +83,12 @@ def update_plot(frame):
         # Rotate line
         angle = np.deg2rad(W * frame)  # Convert degrees to radians
         x_data, y_data = line.get_xdata(), line.get_ydata()
+        print(len(x_data), len(y_data))
         x_rotated = x_data * np.cos(angle) - y_data * np.sin(angle)
         y_rotated = x_data * np.sin(angle) + y_data * np.cos(angle)
         line.set_data(x_rotated, y_rotated)
-        return lines
+
+    return lines
 
 # Start animation
 ani = FuncAnimation(fig, update_plot, interval=8, blit=True, cache_frame_data=False)
