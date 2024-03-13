@@ -28,8 +28,8 @@ RATE = 44100
 CHUNK = 1024
 
 # Visual parameters
-T = 0.2
-W = 1
+T = 0.01
+W = 0.3
 
 # Initialize PyAudio
 p = pyaudio.PyAudio()
@@ -42,8 +42,8 @@ stream = p.open(format=FORMAT,
                 frames_per_buffer=CHUNK)
 
 # Create plot
-matplotlib.rcParams["figure.figsize"] = (15,12)
-fig, ax = plt.subplots()
+matplotlib.rcParams["figure.figsize"] = (20,20)
+fig, ax = plt.subplots(subplot_kw={'projection': 'polar'})
 #
 fig.patch.set_visible(False)  # Hide figure background
 ax.set_xticks([])  # Hide x-axis ticks
@@ -62,7 +62,7 @@ def update_plot(frame):
         # Adjust opacity
         alpha = line.get_alpha()
         if alpha > 0:
-            line.set_alpha(max(0, alpha - T / 100.0))  # Decaying opacity
+            line.set_alpha(max(0, alpha - T / 10.0))  # Decaying opacity
         else:
             line.set_alpha(0)  # Ensure opacity doesn't go negative
 
@@ -75,7 +75,7 @@ def update_plot(frame):
     return lines
 
 # Start animation
-ani = FuncAnimation(fig, update_plot, blit=True)
+ani = FuncAnimation(fig, update_plot, interval=20, blit=True)
 plt.show()
 # Close the stream and terminate PyAudio
 stream.stop_stream()
