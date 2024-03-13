@@ -38,6 +38,9 @@ plt.get_current_fig_manager().window.geometry("+0+0")  # Move window to top-left
 # Remove margins at the top and left
 plt.subplots_adjust(left=0, right=1, bottom=0, top=1)
 
+# Remove the menu bar
+plt.get_current_fig_manager().window.set_menu(None)
+
 
 # Update function
 def update_plot(frame):
