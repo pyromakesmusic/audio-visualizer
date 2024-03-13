@@ -26,6 +26,8 @@ FORMAT = pyaudio.paInt16
 CHANNELS = 1
 RATE = 44100
 CHUNK = 1024
+ROLLING_WINDOW = 50  # Size of the rolling window for calculating the rolling average
+
 
 # Visual parameters
 T = 0.01
@@ -50,14 +52,24 @@ ax.set_xticks([])  # Hide x-axis ticks
 ax.set_yticks([])  # Hide y-axis ticks
 
 x = np.arange(0, 2 * CHUNK, 2)
-lines = ax.plot(x, np.random.rand(CHUNK), alpha=1.0)
+# lines = ax.plot(x, np.random.rand(CHUNK), alpha=0.8, color="red")
+lines = ax.plot(x, np.random.rand(CHUNK), alpha=0.8, color="red")
+
+# Initialize rolling average
+rolling_average = np.zeros(ROLLING_WINDOW)
 
 # Update function
 def update_plot(frame):
     data = np.frombuffer(stream.read(CHUNK), dtype=np.int16)
+
+    # Calculate rolling average
+    rolling_average[:-1] = rolling_average[1:]  # Shift values to the left
+    rolling_average[-1] = np.mean(np.abs(data))  # Calculate new rolling average
+
+
     for line in lines:
         # Set data for each line
-        line.set_ydata(data)
+        line.set_ydata(rolling_average)  # Using this as a filter
 
         # Adjust opacity
         alpha = line.get_alpha()
@@ -72,10 +84,10 @@ def update_plot(frame):
         x_rotated = x_data * np.cos(angle) - y_data * np.sin(angle)
         y_rotated = x_data * np.sin(angle) + y_data * np.cos(angle)
         line.set_data(x_rotated, y_rotated)
-    return lines
+        return lines
 
 # Start animation
-ani = FuncAnimation(fig, update_plot, interval=20, blit=True)
+ani = FuncAnimation(fig, update_plot, interval=8, blit=True, cache_frame_data=False)
 plt.show()
 # Close the stream and terminate PyAudio
 stream.stop_stream()
