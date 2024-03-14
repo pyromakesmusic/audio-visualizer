@@ -38,6 +38,7 @@ HIGH_FREQ = (2000, 20000)  # High frequency range
 # Visual parameters
 T = 0.001
 W = 0.2
+MAX_FRAMES = 40
 
 # Initialize PyAudio
 p = pyaudio.PyAudio()
@@ -104,15 +105,15 @@ def update_plot(frame):
     rolling_average_high[-1] = np.mean(np.abs(spectrum[high_mask]))
 
     # Update lines
-    # lines_0.set_ydata(rectified_data)
-    # lines_low.set_ydata(rolling_average_low)
+    lines_0.set_ydata(rectified_data)
+    lines_low.set_ydata(rolling_average_low)
     # lines_mid.set_ydata(rolling_average_mid)
     # lines_high.set_ydata(rolling_average_high)
 
     return lines
 
 # Start animation
-ani = FuncAnimation(fig, update_plot, interval=8, blit=True, cache_frame_data=False)
+ani = FuncAnimation(fig, update_plot, interval=4, blit=True, cache_frame_data=True, save_count=MAX_FRAMES)
 plt.show()
 # Close the stream and terminate PyAudio
 stream.stop_stream()
