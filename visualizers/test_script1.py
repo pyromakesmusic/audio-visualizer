@@ -88,11 +88,13 @@ stream = p.open(format=FORMAT,
 # Create plot
 plt.rcParams["figure.figsize"] = (20,20)
 plt.rcParams["figure.facecolor"] = "black"
+# fig, ax = plt.subplots(subplot_kw={'projection': 'polar'})
+fig = plt.figure()
 
-fig, ax = plt.subplots(subplot_kw={'projection': 'polar'})
+ax = plt.subplot(polar=True)
+fig.patch.set_facecolor("black")
 ax.set_facecolor("black")
 
-fig.patch.set_visible(False)  # Hide figure background
 ax.set_xticks([])  # Hide x-axis ticks
 ax.set_yticks([])  # Hide y-axis ticks
 
@@ -189,7 +191,7 @@ def update_plot(frame):
     return lines_low, lines_mid, lines_high
 
 # Start animation
-ani = FuncAnimation(fig, update_plot, interval=6, blit=True, cache_frame_data=False)
+ani = FuncAnimation(fig, update_plot, interval=20, blit=True, cache_frame_data=False)
 plt.show()
 # Close the stream and terminate PyAudio
 stream.stop_stream()
