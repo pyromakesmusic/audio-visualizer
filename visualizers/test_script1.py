@@ -36,9 +36,9 @@ MID_FREQ = (200, 2000)  # Middle frequency range
 HIGH_FREQ = (2000, 20000)  # High frequency range
 
 # Visual parameters
-T = 0.1  # Decay parameter varies from 0 to 1, is a fraction of total opacity
-W = 0.2
-MAX_FRAMES = 40
+T = 0.4  # Decay parameter varies from 0 to 1, is a fraction of total opacity
+W = 0.8
+MAX_FRAMES = 20
 
 # Initialize PyAudio
 p = pyaudio.PyAudio()
@@ -62,10 +62,10 @@ ax.set_xticks([])  # Hide x-axis ticks
 ax.set_yticks([])  # Hide y-axis ticks
 
 x = np.arange(0, 2 * CHUNK, 2)
-lines_0, = ax.plot(x, np.random.rand(CHUNK), alpha=0.5, color="red")
-lines_low, = ax.plot(x, np.random.rand(CHUNK), alpha=0.5, color="red")
-lines_mid, = ax.plot(x, np.random.rand(CHUNK), alpha=0.5, color="green")
-lines_high, = ax.plot(x, np.random.rand(CHUNK), alpha=0.5, color="blue")
+lines_0, = ax.plot(x, np.random.rand(CHUNK), alpha=0.9, color="red")
+lines_low, = ax.plot(x, np.random.rand(CHUNK), alpha=0.9, color="red")
+lines_mid, = ax.plot(x, np.random.rand(CHUNK), alpha=0.9, color="green")
+lines_high, = ax.plot(x, np.random.rand(CHUNK), alpha=0.9, color="blue")
 
 lines = [lines_0, lines_low, lines_mid, lines_high]
 
