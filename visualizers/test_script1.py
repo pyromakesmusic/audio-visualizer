@@ -163,7 +163,7 @@ def update_plot(frame):
 
     # Update lines
 
-    lines_0.set_ydata(rolling_average_low)
+    lines_0.set_ydata(rectified_data)
     lines_low.set_ydata(rolling_average_low)
     lines_mid.set_ydata(rolling_average_mid)
     lines_high.set_ydata(rolling_average_high)
