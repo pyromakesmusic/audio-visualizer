@@ -58,10 +58,11 @@ ax.set_xticks([])  # Hide x-axis ticks
 ax.set_yticks([])  # Hide y-axis ticks
 
 x = np.arange(0, 2 * CHUNK, 2)
-lines_0 = ax.plot(x, np.random.rand(CHUNK), alpha=0.8, color="red")
-lines_low, = ax.plot(x, np.random.rand(CHUNK), alpha=0.8, color="red")
-lines_mid, = ax.plot(x, np.random.rand(CHUNK), alpha=0.8, color="green")
-lines_high, = ax.plot(x, np.random.rand(CHUNK), alpha=0.8, color="blue")
+lines_0, = ax.plot(x, np.random.rand(CHUNK), alpha=0.5, color="red")
+lines_low, = ax.plot(x, np.random.rand(CHUNK), alpha=0.5, color="red")
+lines_mid, = ax.plot(x, np.random.rand(CHUNK), alpha=0.5, color="green")
+lines_high, = ax.plot(x, np.random.rand(CHUNK), alpha=0.5, color="blue")
+
 lines = [lines_0, lines_low, lines_mid, lines_high]
 
 # Initialize rolling average
@@ -100,10 +101,10 @@ def update_plot(frame):
     rolling_average_high[-1] = np.mean(np.abs(spectrum[high_mask]))
 
     # Update lines
-    print(lines)
-    lines[0].set_ydata(rolling_average_low)
-    lines[1].set_ydata(rolling_average_mid)
-    lines[2].set_ydata(rolling_average_high)
+    # lines_0.set_ydata(rectified_data)
+    # lines_low.set_ydata(rolling_average_low)
+    # lines_mid.set_ydata(rolling_average_mid)
+    # lines_high.set_ydata(rolling_average_high)
 
     return lines
 
