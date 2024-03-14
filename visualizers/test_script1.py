@@ -36,7 +36,7 @@ MID_FREQ = (200, 2000)  # Middle frequency range
 HIGH_FREQ = (2000, 20000)  # High frequency range
 
 # Visual parameters
-T = 0.001
+T = 0.1  # Decay parameter varies from 0 to 1, is a fraction of total opacity
 W = 0.2
 MAX_FRAMES = 40
 
@@ -71,10 +71,15 @@ lines = [lines_0, lines_low, lines_mid, lines_high]
 
 # Initialize rolling average
 rolling_window_size = int(ROLLING_WINDOW_RATIO * CHUNK)
+
+# Grab initial data
 data = np.frombuffer(stream.read(CHUNK), dtype=np.int16)
+
+# Rectify the data
 rectified_data = np.abs(data)
 
 rolling_window = np.zeros(rolling_window_size)
+
 rolling_average = np.zeros(len(rectified_data))
 
 rolling_average_low = np.zeros(rolling_window_size)
@@ -113,8 +118,10 @@ def update_plot(frame):
 
     # Perform FFT
     spectrum = np.fft.fft(rectified_data)
+
     # Calculate frequency bins
     frequencies = np.fft.fftfreq(CHUNK, 1 / RATE)
+
     # Calculate average amplitudes in frequency bins
     low_mask = (frequencies >= LOW_FREQ[0]) & (frequencies <= LOW_FREQ[1])
     mid_mask = (frequencies >= MID_FREQ[0]) & (frequencies <= MID_FREQ[1])
@@ -124,6 +131,17 @@ def update_plot(frame):
 
     # Calculate rolling average
     for i in range(len(rectified_data)):
+        # Perform FFT
+        spectrum = np.fft.fft(rectified_data)
+
+        # Calculate frequency bins
+        frequencies = np.fft.fftfreq(CHUNK, 1 / RATE)
+
+        # Calculate average amplitudes in frequency bins
+        low_mask = (frequencies >= LOW_FREQ[0]) & (frequencies <= LOW_FREQ[1])
+        mid_mask = (frequencies >= MID_FREQ[0]) & (frequencies <= MID_FREQ[1])
+        high_mask = (frequencies >= HIGH_FREQ[0]) & (frequencies <= HIGH_FREQ[1])
+
         # Add current sample to rolling window
         rolling_window[:-1] = rolling_window[1:]  # Shift values to the left
         rolling_window[-1] = rectified_data[i]
@@ -131,17 +149,22 @@ def update_plot(frame):
         # Calculate rolling average of the last 50 samples
         rolling_average[i] = np.mean(rolling_window)
 
+        rolling_average_low[:-1] = rolling_average_low[1:]
+        rolling_average_low[i] = np.mean(np.abs(spectrum[low_mask]))
+
+        rolling_average_mid[:-1] = rolling_average_mid[1:]
+        rolling_average_mid[i] = np.mean(np.abs(spectrum[mid_mask]))
+
+        rolling_average_low[:-1] = rolling_average_mid[1:]
+        rolling_average_mid[i] = np.mean(np.abs(spectrum[high_mask]))
+
 
     # Update lines
-    print(len(rectified_data))
-    print(rectified_data)
-    print(len(rolling_average_low))
-    print(rolling_average_low)
-    lines_0.set_ydata(rolling_average)
-    # lines_low.set_ydata(rolling_average_low)
-    # lines_mid.set_ydata(rolling_average_mid)
-    # lines_high.set_ydata(rolling_average_high)
-
+    # print(len(rectified_data))
+    # print(rectified_data)
+    # print(len(rolling_average_low))
+    # print(rolling_average_low)
+    lines_0.set_ydata(rolling_average_low)
     return lines
 
 # Start animation
