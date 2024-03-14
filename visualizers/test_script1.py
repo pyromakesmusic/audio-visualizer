@@ -97,12 +97,11 @@ ax.set_xticks([])  # Hide x-axis ticks
 ax.set_yticks([])  # Hide y-axis ticks
 
 x = np.arange(0, 2 * CHUNK, 2)
-lines_0, = ax.plot(x, np.random.rand(CHUNK), alpha=0.9, color="red")
 lines_low, = ax.plot(x, np.random.rand(CHUNK), alpha=0.9, color="red")
 lines_mid, = ax.plot(x, np.random.rand(CHUNK), alpha=0.9, color="green")
 lines_high, = ax.plot(x, np.random.rand(CHUNK), alpha=0.9, color="blue")
 
-lines = [lines_0, lines_low, lines_mid, lines_high]
+lines = [lines_low, lines_mid, lines_high]
 
 
 # Grab initial data
@@ -116,6 +115,7 @@ rolling_window_size = int(ROLLING_WINDOW_RATIO * CHUNK)
 
 # Build a set of rolling windows
 rolling_window = np.zeros(rolling_window_size)
+
 # Making a rolling average the length of the window
 rolling_average_low = np.zeros(rolling_window_size)
 rolling_average_mid = np.zeros(rolling_window_size)
@@ -171,24 +171,21 @@ def update_plot(frame):
 
     # Update lines
 
-    red_colors = [(r / 255, g / 255, b / 255) for r, g, b in zip(rolling_average_low[:-1], 0, 0)]
-    green_colors = [(r / 255, g / 255, b / 255) for r, g, b in zip(0, rolling_average_mid[:-1], 0)]
-    blue_colors = [(r / 255, g / 255, b / 255) for r, g, b in zip(0, 0, rolling_average_low[:-1])]
+    red_colors = (min(abs(rolling_average_low[-1]/255), 1), 0, 0)
+    green_colors = (0, min(abs(rolling_average_mid[-1]/255), 1), 0)
+    blue_colors = (0, 0, min(abs(rolling_average_high[-1]/255), 1))
 
-    print(red_colors, green_colors, blue_colors)
+    lines_low.set_ydata(rolling_average_low)
+    lines_mid.set_ydata(rolling_average_mid)
+    lines_high.set_ydata(rolling_average_high)
 
     # Update line colors
     lines_low.set_color(red_colors)
     lines_mid.set_color(green_colors)
     lines_high.set_color(blue_colors)
 
-    lines_0.set_ydata(rectified_data)
-    lines_low.set_ydata(rolling_average_low)
-    lines_mid.set_ydata(rolling_average_mid)
-    lines_high.set_ydata(rolling_average_high)
 
-
-    return lines_0, lines_low, lines_mid, lines_high
+    return lines_low, lines_mid, lines_high
 
 # Start animation
 ani = FuncAnimation(fig, update_plot, interval=4, blit=True, cache_frame_data=False)
