@@ -98,8 +98,8 @@ ax.set_yticks([])  # Hide y-axis ticks
 
 x = np.arange(0, 2 * CHUNK, 2)
 lines_low, = ax.plot(x, np.random.rand(CHUNK), alpha=0.9, color="red")
-lines_mid, = ax.plot(x, np.random.rand(CHUNK), alpha=0.9, color="red")
-lines_high, = ax.plot(x, np.random.rand(CHUNK), alpha=0.9, color="red")
+lines_mid, = ax.plot(x, np.random.rand(CHUNK), alpha=0.9, color="blue")
+lines_high, = ax.plot(x, np.random.rand(CHUNK), alpha=0.9, color="green")
 
 lines = [lines_low, lines_mid, lines_high]
 
@@ -128,9 +128,6 @@ def update_plot(frame):
     # Rectify the audio data by taking absolute value
     rectified_data = np.abs(data)
 
-    # Perform FFT
-    spectrum = np.fft.fft(rectified_data)
-
     # Calculate frequency bins
     frequencies = np.fft.fftfreq(CHUNK, 1 / RATE)
 
@@ -148,6 +145,8 @@ def update_plot(frame):
     for i in range(len(rectified_data)):
         # Calculate frequency bins
         frequencies = np.fft.fftfreq(CHUNK, 1 / RATE)
+        # Perform FFT
+        spectrum = np.fft.fft(rectified_data)
 
         # Calculate average amplitudes in frequency bins
         low_mask = (frequencies >= LOW_FREQ[0]) & (frequencies <= LOW_FREQ[1])
@@ -161,31 +160,36 @@ def update_plot(frame):
         # Calculate rolling average of the last 50 samples
         rolling_average_low[:-1] = rolling_average_low[1:]
         rolling_average_low[i-1] = np.mean(np.abs(spectrum[low_mask]))
+
         rolling_average_mid[:-1] = rolling_average_mid[1:]
         rolling_average_mid[i-1] = np.mean(np.abs(spectrum[mid_mask]))
+
         rolling_average_high[:-1] = rolling_average_high[1:]
         rolling_average_high[i-1] = np.mean(np.abs(spectrum[high_mask]))
 
     # Update lines
 
-    lines_low.set_ydata(rectified_data)
+    lines_low.set_ydata(rolling_average_low)
     lines_mid.set_ydata(rolling_average_mid)
     lines_high.set_ydata(rolling_average_high)
 
-    print(rolling_average_low)
-    red_colors = (0.5,0,0)
-    green_colors = (0, (rectified_data[-1]/25), 0)
-    blue_colors = (0, 0, 0.8)
+    red_colors = (min((rolling_average_low[-1]/10), 0.8),0,0)
+    green_colors = (0, min((rolling_average_mid[-1]/10), 0.8), 0)
+    blue_colors = (0, 0, min((rolling_average_high[-1]/10), 0.8))
+    print("Red Colors: ", red_colors)
+    print("Green Colors: ", green_colors)
+    print("Blue Colors: ", blue_colors)
+
 
     # Update line colors
-    lines_low.set_color(green_colors)
-    lines_mid.set_color("red")
-    lines_high.set_color("red")
+    lines_low.set_color(red_colors)
+    lines_mid.set_color(red_colors)
+    lines_high.set_color(red_colors)
 
     return lines_low, lines_mid, lines_high
 
 # Start animation
-ani = FuncAnimation(fig, update_plot, interval=4, blit=True, cache_frame_data=False)
+ani = FuncAnimation(fig, update_plot, interval=6, blit=True, cache_frame_data=False)
 plt.show()
 # Close the stream and terminate PyAudio
 stream.stop_stream()
