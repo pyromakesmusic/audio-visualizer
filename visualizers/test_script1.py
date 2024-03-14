@@ -71,7 +71,7 @@ MID_FREQ = (200, 2000)  # Middle frequency range
 HIGH_FREQ = (2000, 20000)  # High frequency range
 
 # Visual parameters
-T = 0.4  # Decay parameter varies from 0 to 1, is a fraction of total opacity
+T = 0.01  # Decay parameter varies from 0 to 1, is a fraction of total opacity
 W = 0.8
 MAX_FRAMES = 20
 
@@ -97,9 +97,9 @@ ax.set_xticks([])  # Hide x-axis ticks
 ax.set_yticks([])  # Hide y-axis ticks
 
 x = np.arange(0, 2 * CHUNK, 2)
-lines_low, = ax.plot(x, np.random.rand(CHUNK), alpha=0.9, color="red")
-lines_mid, = ax.plot(x, np.random.rand(CHUNK), alpha=0.9, color="green")
-lines_high, = ax.plot(x, np.random.rand(CHUNK), alpha=0.9, color="blue")
+lines_low, = ax.plot(x, np.random.rand(CHUNK), alpha=0.9, color="white")
+lines_mid, = ax.plot(x, np.random.rand(CHUNK), alpha=0.9, color="white")
+lines_high, = ax.plot(x, np.random.rand(CHUNK), alpha=0.9, color="white")
 
 lines = [lines_low, lines_mid, lines_high]
 
@@ -171,19 +171,19 @@ def update_plot(frame):
 
     # Update lines
 
-    red_colors = (min(abs(rolling_average_low[-1]/255), 1), 0, 0)
-    green_colors = (0, min(abs(rolling_average_mid[-1]/255), 1), 0)
-    blue_colors = (0, 0, min(abs(rolling_average_high[-1]/255), 1))
-
     lines_low.set_ydata(rolling_average_low)
     lines_mid.set_ydata(rolling_average_mid)
     lines_high.set_ydata(rolling_average_high)
+
+    print(rolling_average_low)
+    red_colors = (0.5,0,0)
+    green_colors = (0, 0.4, 0)
+    blue_colors = (0, 0, 0.8)
 
     # Update line colors
     lines_low.set_color(red_colors)
     lines_mid.set_color(green_colors)
     lines_high.set_color(blue_colors)
-
 
     return lines_low, lines_mid, lines_high
 
