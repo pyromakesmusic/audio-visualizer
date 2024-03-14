@@ -169,9 +169,9 @@ def update_plot(frame):
 
     # Update lines
 
-    lines_low.set_ydata(rolling_average_low)
-    lines_mid.set_ydata(rolling_average_mid)
-    lines_high.set_ydata(rolling_average_high)
+    lines_low.set_ydata(rectified_data)
+    lines_mid.set_ydata(rectified_data)
+    lines_high.set_ydata(rectified_data)
 
     red_colors = (min((rolling_average_low[-1]/10), 0.8),0,0)
     green_colors = (0, min((rolling_average_mid[-1]/10), 0.8), 0)
@@ -183,8 +183,8 @@ def update_plot(frame):
 
     # Update line colors
     lines_low.set_color(red_colors)
-    lines_mid.set_color(red_colors)
-    lines_high.set_color(red_colors)
+    lines_mid.set_color(green_colors)
+    lines_high.set_color(blue_colors)
 
     return lines_low, lines_mid, lines_high
 
