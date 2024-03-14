@@ -50,8 +50,11 @@ stream = p.open(format=FORMAT,
                 frames_per_buffer=CHUNK)
 
 # Create plot
-matplotlib.rcParams["figure.figsize"] = (20,20)
+plt.rcParams["figure.figsize"] = (20,20)
+plt.axes().set_facecolor('black')  # Set plot background color
+
 fig, ax = plt.subplots(subplot_kw={'projection': 'polar'})
+ax.set_facecolor("black")
 #
 fig.patch.set_visible(False)  # Hide figure background
 ax.set_xticks([])  # Hide x-axis ticks
