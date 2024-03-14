@@ -6,6 +6,37 @@ from matplotlib.animation import FuncAnimation
 from matplotlib.lines import Line2D
 from PyQt5 import QtWidgets
 
+"""
+Functions
+"""
+
+#  Interpolation function
+def interpolate_list(original_list, new_length):
+    # Calculate the step size for interpolation
+    step = (len(original_list) - 1) / (new_length - 1)
+
+    # Initialize the new list
+    new_list = []
+
+    # Perform linear interpolation
+    for i in range(new_length):
+        # Calculate the index of the two closest points in the original list
+        idx1 = int(np.floor(i * step))
+        idx2 = int(np.ceil(i * step))
+
+        # Calculate the fractional distance between the two points
+        frac = i * step - idx1
+        # Perform linear interpolation between the two points
+        interpolated_value = (1 - frac) * original_list[idx1] + frac * original_list[idx2]
+        # Add the interpolated value to the new list
+        new_list.append(interpolated_value)
+
+    return new_list
+
+
+"""
+MAIN
+"""
 
 # Set the Matplotlib backend to Qt
 plt.switch_backend('Qt5Agg')
@@ -21,6 +52,10 @@ plt.subplots_adjust(left=0, right=1, bottom=0, top=1)
 # Remove menu bar
 window.setMenuBar(None)
 
+
+"""
+GLOBALS
+"""
 # Parameters for audio capture
 FORMAT = pyaudio.paInt16
 CHANNELS = 1
@@ -52,11 +87,11 @@ stream = p.open(format=FORMAT,
 
 # Create plot
 plt.rcParams["figure.figsize"] = (20,20)
-plt.axes().set_facecolor('black')  # Set plot background color
+plt.rcParams["figure.facecolor"] = "black"
 
 fig, ax = plt.subplots(subplot_kw={'projection': 'polar'})
 ax.set_facecolor("black")
-#
+
 fig.patch.set_visible(False)  # Hide figure background
 ax.set_xticks([])  # Hide x-axis ticks
 ax.set_yticks([])  # Hide y-axis ticks
@@ -69,8 +104,6 @@ lines_high, = ax.plot(x, np.random.rand(CHUNK), alpha=0.9, color="blue")
 
 lines = [lines_0, lines_low, lines_mid, lines_high]
 
-# Initialize rolling average
-rolling_window_size = int(ROLLING_WINDOW_RATIO * CHUNK)
 
 # Grab initial data
 data = np.frombuffer(stream.read(CHUNK), dtype=np.int16)
@@ -78,36 +111,15 @@ data = np.frombuffer(stream.read(CHUNK), dtype=np.int16)
 # Rectify the data
 rectified_data = np.abs(data)
 
+# Initialize rolling average
+rolling_window_size = int(ROLLING_WINDOW_RATIO * CHUNK)
+
+# Build a set of rolling windows
 rolling_window = np.zeros(rolling_window_size)
-
-rolling_average = np.zeros(len(rectified_data))
-
+# Making a rolling average the length of the window
 rolling_average_low = np.zeros(rolling_window_size)
 rolling_average_mid = np.zeros(rolling_window_size)
 rolling_average_high = np.zeros(rolling_window_size)
-
-#  Interpolation function
-def interpolate_list(original_list, new_length):
-    # Calculate the step size for interpolation
-    step = (len(original_list) - 1) / (new_length - 1)
-
-    # Initialize the new list
-    new_list = []
-
-    # Perform linear interpolation
-    for i in range(new_length):
-        # Calculate the index of the two closest points in the original list
-        idx1 = int(np.floor(i * step))
-        idx2 = int(np.ceil(i * step))
-
-        # Calculate the fractional distance between the two points
-        frac = i * step - idx1
-        # Perform linear interpolation between the two points
-        interpolated_value = (1 - frac) * original_list[idx1] + frac * original_list[idx2]
-        # Add the interpolated value to the new list
-        new_list.append(interpolated_value)
-
-    return new_list
 
 # Update function
 def update_plot(frame):
@@ -150,24 +162,27 @@ def update_plot(frame):
         rolling_window[-1] = rectified_data[i]
 
         # Calculate rolling average of the last 50 samples
-        rolling_average[i] = np.mean(rolling_window)
-
         rolling_average_low[:-1] = rolling_average_low[1:]
         rolling_average_low[i-1] = np.mean(np.abs(spectrum[low_mask]))
-
         rolling_average_mid[:-1] = rolling_average_mid[1:]
         rolling_average_mid[i-1] = np.mean(np.abs(spectrum[mid_mask]))
-
         rolling_average_high[:-1] = rolling_average_high[1:]
         rolling_average_high[i-1] = np.mean(np.abs(spectrum[high_mask]))
 
     # Update lines
 
+    # Update line colors
+    lines_low.set_color(tuple(rolling_average_low[:3] / np.max(rolling_average_low)))
+    lines_mid.set_color(tuple(rolling_average_mid[:3] / np.max(rolling_average_mid)))
+    lines_high.set_color(tuple(rolling_average_high[:3] / np.max(rolling_average_high)))
+
     lines_0.set_ydata(rectified_data)
     lines_low.set_ydata(rolling_average_low)
     lines_mid.set_ydata(rolling_average_mid)
     lines_high.set_ydata(rolling_average_high)
-    return lines
+
+
+    return lines_0, lines_low, lines_mid, lines_high
 
 # Start animation
 ani = FuncAnimation(fig, update_plot, interval=4, blit=True, cache_frame_data=False)
