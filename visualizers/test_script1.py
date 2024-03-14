@@ -71,8 +71,8 @@ MID_FREQ = (200, 2000)  # Middle frequency range
 HIGH_FREQ = (2000, 20000)  # High frequency range
 
 # Visual parameters
-T = 0.01  # Decay parameter varies from 0 to 1, is a fraction of total opacity
-W = 0.8
+T = 0.001  # Decay parameter varies from 0 to 1, is a fraction of total opacity
+W = 0.01
 MAX_FRAMES = 20
 
 # Initialize PyAudio
@@ -97,9 +97,9 @@ ax.set_xticks([])  # Hide x-axis ticks
 ax.set_yticks([])  # Hide y-axis ticks
 
 x = np.arange(0, 2 * CHUNK, 2)
-lines_low, = ax.plot(x, np.random.rand(CHUNK), alpha=0.9, color="white")
-lines_mid, = ax.plot(x, np.random.rand(CHUNK), alpha=0.9, color="white")
-lines_high, = ax.plot(x, np.random.rand(CHUNK), alpha=0.9, color="white")
+lines_low, = ax.plot(x, np.random.rand(CHUNK), alpha=0.9, color="red")
+lines_mid, = ax.plot(x, np.random.rand(CHUNK), alpha=0.9, color="red")
+lines_high, = ax.plot(x, np.random.rand(CHUNK), alpha=0.9, color="red")
 
 lines = [lines_low, lines_mid, lines_high]
 
@@ -171,7 +171,7 @@ def update_plot(frame):
 
     # Update lines
 
-    lines_low.set_ydata(rolling_average_low)
+    lines_low.set_ydata(rectified_data)
     lines_mid.set_ydata(rolling_average_mid)
     lines_high.set_ydata(rolling_average_high)
 
@@ -181,9 +181,9 @@ def update_plot(frame):
     blue_colors = (0, 0, 0.8)
 
     # Update line colors
-    lines_low.set_color(red_colors)
-    lines_mid.set_color(green_colors)
-    lines_high.set_color(blue_colors)
+    lines_low.set_color("red")
+    lines_mid.set_color("red")
+    lines_high.set_color("red")
 
     return lines_low, lines_mid, lines_high
 
