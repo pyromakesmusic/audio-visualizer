@@ -71,7 +71,12 @@ lines = [lines_0, lines_low, lines_mid, lines_high]
 
 # Initialize rolling average
 rolling_window_size = int(ROLLING_WINDOW_RATIO * CHUNK)
-rolling_average = np.zeros(rolling_window_size)
+data = np.frombuffer(stream.read(CHUNK), dtype=np.int16)
+rectified_data = np.abs(data)
+
+rolling_window = np.zeros(rolling_window_size)
+rolling_average = np.zeros(len(rectified_data))
+
 rolling_average_low = np.zeros(rolling_window_size)
 rolling_average_mid = np.zeros(rolling_window_size)
 rolling_average_high = np.zeros(rolling_window_size)
@@ -92,10 +97,8 @@ def interpolate_list(original_list, new_length):
 
         # Calculate the fractional distance between the two points
         frac = i * step - idx1
-
         # Perform linear interpolation between the two points
         interpolated_value = (1 - frac) * original_list[idx1] + frac * original_list[idx2]
-
         # Add the interpolated value to the new list
         new_list.append(interpolated_value)
 
@@ -107,8 +110,7 @@ def update_plot(frame):
 
     # Rectify the audio data by taking absolute value
     rectified_data = np.abs(data)
-    # Rectify the audio data by taking absolute value
-    rectified_data = np.abs(data)
+
     # Perform FFT
     spectrum = np.fft.fft(rectified_data)
     # Calculate frequency bins
@@ -118,21 +120,24 @@ def update_plot(frame):
     mid_mask = (frequencies >= MID_FREQ[0]) & (frequencies <= MID_FREQ[1])
     high_mask = (frequencies >= HIGH_FREQ[0]) & (frequencies <= HIGH_FREQ[1])
 
-    rolling_average_low[:-1] = rolling_average_low[1:]  # Shift values to the left
-    rolling_average_low[-1] = np.mean(np.abs(spectrum[low_mask]))
+    rolling_average_low = interpolate_list(rectified_data, 1024)
 
-    rolling_average_mid[:-1] = rolling_average_mid[1:]  # Shift values to the left
-    rolling_average_mid[-1] = np.mean(np.abs(spectrum[mid_mask]))
+    # Calculate rolling average
+    for i in range(len(rectified_data)):
+        # Add current sample to rolling window
+        rolling_window[:-1] = rolling_window[1:]  # Shift values to the left
+        rolling_window[-1] = rectified_data[i]
 
-    rolling_average_high[:-1] = rolling_average_high[1:]  # Shift values to the left
-    rolling_average_high[-1] = np.mean(np.abs(spectrum[high_mask]))
+        # Calculate rolling average of the last 50 samples
+        rolling_average[i] = np.mean(rolling_window)
+
 
     # Update lines
     print(len(rectified_data))
     print(rectified_data)
     print(len(rolling_average_low))
     print(rolling_average_low)
-    lines_0.set_ydata(rectified_data)
+    lines_0.set_ydata(rolling_average)
     # lines_low.set_ydata(rolling_average_low)
     # lines_mid.set_ydata(rolling_average_mid)
     # lines_high.set_ydata(rolling_average_high)
