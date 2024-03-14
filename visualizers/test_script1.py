@@ -171,10 +171,16 @@ def update_plot(frame):
 
     # Update lines
 
+    red_colors = [(r / 255, g / 255, b / 255) for r, g, b in zip(rolling_average_low[:-1], 0, 0)]
+    green_colors = [(r / 255, g / 255, b / 255) for r, g, b in zip(0, rolling_average_mid[:-1], 0)]
+    blue_colors = [(r / 255, g / 255, b / 255) for r, g, b in zip(0, 0, rolling_average_low[:-1])]
+
+    print(red_colors, green_colors, blue_colors)
+
     # Update line colors
-    lines_low.set_color(tuple(rolling_average_low[:3] / np.max(rolling_average_low)))
-    lines_mid.set_color(tuple(rolling_average_mid[:3] / np.max(rolling_average_mid)))
-    lines_high.set_color(tuple(rolling_average_high[:3] / np.max(rolling_average_high)))
+    lines_low.set_color(red_colors)
+    lines_mid.set_color(green_colors)
+    lines_high.set_color(blue_colors)
 
     lines_0.set_ydata(rectified_data)
     lines_low.set_ydata(rolling_average_low)
