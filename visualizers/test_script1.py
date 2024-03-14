@@ -76,7 +76,30 @@ rolling_average_low = np.zeros(rolling_window_size)
 rolling_average_mid = np.zeros(rolling_window_size)
 rolling_average_high = np.zeros(rolling_window_size)
 
+#  Interpolation function
+def interpolate_list(original_list, new_length):
+    # Calculate the step size for interpolation
+    step = (len(original_list) - 1) / (new_length - 1)
 
+    # Initialize the new list
+    new_list = []
+
+    # Perform linear interpolation
+    for i in range(new_length):
+        # Calculate the index of the two closest points in the original list
+        idx1 = int(np.floor(i * step))
+        idx2 = int(np.ceil(i * step))
+
+        # Calculate the fractional distance between the two points
+        frac = i * step - idx1
+
+        # Perform linear interpolation between the two points
+        interpolated_value = (1 - frac) * original_list[idx1] + frac * original_list[idx2]
+
+        # Add the interpolated value to the new list
+        new_list.append(interpolated_value)
+
+    return new_list
 
 # Update function
 def update_plot(frame):
@@ -105,15 +128,19 @@ def update_plot(frame):
     rolling_average_high[-1] = np.mean(np.abs(spectrum[high_mask]))
 
     # Update lines
+    print(len(rectified_data))
+    print(rectified_data)
+    print(len(rolling_average_low))
+    print(rolling_average_low)
     lines_0.set_ydata(rectified_data)
-    lines_low.set_ydata(rolling_average_low)
+    # lines_low.set_ydata(rolling_average_low)
     # lines_mid.set_ydata(rolling_average_mid)
     # lines_high.set_ydata(rolling_average_high)
 
     return lines
 
 # Start animation
-ani = FuncAnimation(fig, update_plot, interval=4, blit=True, cache_frame_data=True, save_count=MAX_FRAMES)
+ani = FuncAnimation(fig, update_plot, interval=4, blit=True, cache_frame_data=False)
 plt.show()
 # Close the stream and terminate PyAudio
 stream.stop_stream()
