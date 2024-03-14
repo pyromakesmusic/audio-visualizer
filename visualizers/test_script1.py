@@ -127,7 +127,10 @@ def update_plot(frame):
     mid_mask = (frequencies >= MID_FREQ[0]) & (frequencies <= MID_FREQ[1])
     high_mask = (frequencies >= HIGH_FREQ[0]) & (frequencies <= HIGH_FREQ[1])
 
-    rolling_average_low = interpolate_list(rectified_data, 1024)
+    rolling_average_low = interpolate_list(low_mask, 1024)
+    rolling_average_mid = interpolate_list(mid_mask, 1024)
+    rolling_average_high = interpolate_list(high_mask, 1024)
+
 
     # Calculate rolling average
     for i in range(len(rectified_data)):
@@ -150,20 +153,16 @@ def update_plot(frame):
         rolling_average[i] = np.mean(rolling_window)
 
         rolling_average_low[:-1] = rolling_average_low[1:]
-        rolling_average_low[i] = np.mean(np.abs(spectrum[low_mask]))
+        rolling_average_low[i-1] = np.mean(np.abs(spectrum[low_mask]))
 
         rolling_average_mid[:-1] = rolling_average_mid[1:]
-        rolling_average_mid[i] = np.mean(np.abs(spectrum[mid_mask]))
+        rolling_average_mid[i-1] = np.mean(np.abs(spectrum[mid_mask]))
 
-        rolling_average_low[:-1] = rolling_average_mid[1:]
-        rolling_average_mid[i] = np.mean(np.abs(spectrum[high_mask]))
-
+        rolling_average_high[:-1] = rolling_average_high[1:]
+        rolling_average_high[i-1] = np.mean(np.abs(spectrum[high_mask]))
 
     # Update lines
-    # print(len(rectified_data))
-    # print(rectified_data)
-    # print(len(rolling_average_low))
-    # print(rolling_average_low)
+
     lines_0.set_ydata(rolling_average_low)
     return lines
 
