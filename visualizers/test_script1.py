@@ -146,9 +146,6 @@ def update_plot(frame):
 
     # Calculate rolling average
     for i in range(len(rectified_data)):
-        # Perform FFT
-        spectrum = np.fft.fft(rectified_data)
-
         # Calculate frequency bins
         frequencies = np.fft.fftfreq(CHUNK, 1 / RATE)
 
@@ -177,11 +174,11 @@ def update_plot(frame):
 
     print(rolling_average_low)
     red_colors = (0.5,0,0)
-    green_colors = (0, 0.4, 0)
+    green_colors = (0, (rectified_data[-1]/25), 0)
     blue_colors = (0, 0, 0.8)
 
     # Update line colors
-    lines_low.set_color("red")
+    lines_low.set_color(green_colors)
     lines_mid.set_color("red")
     lines_high.set_color("red")
 
