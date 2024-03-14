@@ -30,10 +30,14 @@ ROLLING_WINDOW = 50  # Size of the rolling window for calculating the rolling av
 ROLLING_WINDOW_RATIO = 0.05  # Ratio of the chunk size for the rolling window
 
 
+# Define frequency bins
+LOW_FREQ = (20, 200)  # Low frequency range
+MID_FREQ = (200, 2000)  # Middle frequency range
+HIGH_FREQ = (2000, 20000)  # High frequency range
 
 # Visual parameters
-T = 0.01
-W = 0.3
+T = 0.001
+W = 0.2
 
 # Initialize PyAudio
 p = pyaudio.PyAudio()
@@ -54,12 +58,20 @@ ax.set_xticks([])  # Hide x-axis ticks
 ax.set_yticks([])  # Hide y-axis ticks
 
 x = np.arange(0, 2 * CHUNK, 2)
-# lines = ax.plot(x, np.random.rand(CHUNK), alpha=0.8, color="red")
-lines = ax.plot(x, np.random.rand(CHUNK), alpha=0.8, color="red")
+lines_0 = ax.plot(x, np.random.rand(CHUNK), alpha=0.8, color="red")
+lines_low, = ax.plot(x, np.random.rand(CHUNK), alpha=0.8, color="red")
+lines_mid, = ax.plot(x, np.random.rand(CHUNK), alpha=0.8, color="green")
+lines_high, = ax.plot(x, np.random.rand(CHUNK), alpha=0.8, color="blue")
+lines = [lines_0, lines_low, lines_mid, lines_high]
 
 # Initialize rolling average
 rolling_window_size = int(ROLLING_WINDOW_RATIO * CHUNK)
 rolling_average = np.zeros(rolling_window_size)
+rolling_average_low = np.zeros(rolling_window_size)
+rolling_average_mid = np.zeros(rolling_window_size)
+rolling_average_high = np.zeros(rolling_window_size)
+
+
 
 # Update function
 def update_plot(frame):
@@ -67,30 +79,31 @@ def update_plot(frame):
 
     # Rectify the audio data by taking absolute value
     rectified_data = np.abs(data)
+    # Rectify the audio data by taking absolute value
+    rectified_data = np.abs(data)
+    # Perform FFT
+    spectrum = np.fft.fft(rectified_data)
+    # Calculate frequency bins
+    frequencies = np.fft.fftfreq(CHUNK, 1 / RATE)
+    # Calculate average amplitudes in frequency bins
+    low_mask = (frequencies >= LOW_FREQ[0]) & (frequencies <= LOW_FREQ[1])
+    mid_mask = (frequencies >= MID_FREQ[0]) & (frequencies <= MID_FREQ[1])
+    high_mask = (frequencies >= HIGH_FREQ[0]) & (frequencies <= HIGH_FREQ[1])
 
+    rolling_average_low[:-1] = rolling_average_low[1:]  # Shift values to the left
+    rolling_average_low[-1] = np.mean(np.abs(spectrum[low_mask]))
 
-    # Calculate rolling average
-    rolling_average[:-1] = rolling_average[1:]  # Shift values to the left
-    rolling_average[-1] = np.mean(np.abs(rectified_data))  # Calculate new rolling average
+    rolling_average_mid[:-1] = rolling_average_mid[1:]  # Shift values to the left
+    rolling_average_mid[-1] = np.mean(np.abs(spectrum[mid_mask]))
 
-    for line in lines:
-        # Set data for each line
-        line.set_ydata(rolling_average)
+    rolling_average_high[:-1] = rolling_average_high[1:]  # Shift values to the left
+    rolling_average_high[-1] = np.mean(np.abs(spectrum[high_mask]))
 
-        # Adjust opacity
-        alpha = line.get_alpha()
-        if alpha > 0:
-            line.set_alpha(max(0, alpha - T / 10.0))  # Decaying opacity
-        else:
-            line.set_alpha(0)  # Ensure opacity doesn't go negative
-
-        # Rotate line
-        angle = np.deg2rad(W * frame)  # Convert degrees to radians
-        x_data, y_data = line.get_xdata(), line.get_ydata()
-        print(len(x_data), len(y_data))
-        x_rotated = x_data * np.cos(angle) - y_data * np.sin(angle)
-        y_rotated = x_data * np.sin(angle) + y_data * np.cos(angle)
-        line.set_data(x_rotated, y_rotated)
+    # Update lines
+    print(lines)
+    lines[0].set_ydata(rolling_average_low)
+    lines[1].set_ydata(rolling_average_mid)
+    lines[2].set_ydata(rolling_average_high)
 
     return lines
 
