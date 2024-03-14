@@ -65,9 +65,13 @@ rolling_average = np.zeros(rolling_window_size)
 def update_plot(frame):
     data = np.frombuffer(stream.read(CHUNK), dtype=np.int16)
 
+    # Rectify the audio data by taking absolute value
+    rectified_data = np.abs(data)
+
+
     # Calculate rolling average
     rolling_average[:-1] = rolling_average[1:]  # Shift values to the left
-    rolling_average[-1] = np.mean(np.abs(data))  # Calculate new rolling average
+    rolling_average[-1] = np.mean(np.abs(rectified_data))  # Calculate new rolling average
 
     for line in lines:
         # Set data for each line
