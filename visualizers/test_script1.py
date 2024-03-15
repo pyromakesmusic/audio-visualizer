@@ -93,13 +93,13 @@ fig = plt.figure()
 
 # ax = plt.subplot(polar=True)  # This is the one I want to normally use, with a polar projection
 
-ax = plt.subplot(polar=True)
+ax = plt.subplot()
 fig.patch.set_facecolor("black")
 ax.set_facecolor("black")
 
 ax.set_xticks([])  # Hide x-axis ticks
 ax.set_yticks([])  # Hide y-axis ticks
-plt.ylim(0, 10)
+plt.ylim(0, 1000)  # Experimenting with different y-lim, having this change dynamically would be cool
 
 x = np.arange(0, 2 * CHUNK, 2)
 
