@@ -91,7 +91,9 @@ plt.rcParams["figure.facecolor"] = "black"
 # fig, ax = plt.subplots(subplot_kw={'projection': 'polar'})
 fig = plt.figure()
 
-ax = plt.subplot(polar=True)
+# ax = plt.subplot(polar=True)  # This is the one I want to normally use, with a polar projection
+
+ax = plt.subplot()
 fig.patch.set_facecolor("black")
 ax.set_facecolor("black")
 
@@ -128,7 +130,8 @@ def update_plot(frame):
     data = np.frombuffer(stream.read(CHUNK), dtype=np.int16)
 
     # Rectify the audio data by taking absolute value
-    rectified_data = np.abs(data)
+    # rectified_data = np.abs(data)
+    log_data = np.log(np.abs(data))
 
     # Calculate frequency bins
     frequencies = np.fft.fftfreq(CHUNK, 1 / RATE)
@@ -144,11 +147,11 @@ def update_plot(frame):
 
 
     # Calculate rolling average
-    for i in range(len(rectified_data)):
+    for i in range(len(data)):
         # Calculate frequency bins
         frequencies = np.fft.fftfreq(CHUNK, 1 / RATE)
         # Perform FFT
-        spectrum = np.fft.fft(rectified_data)
+        spectrum = np.fft.fft(data)
 
         # Calculate average amplitudes in frequency bins
         low_mask = (frequencies >= LOW_FREQ[0]) & (frequencies <= LOW_FREQ[1])
@@ -157,7 +160,7 @@ def update_plot(frame):
 
         # Add current sample to rolling window
         rolling_window[:-1] = rolling_window[1:]  # Shift values to the left
-        rolling_window[-1] = rectified_data[i]
+        rolling_window[-1] = data[i]
 
         # Calculate rolling average of the last 50 samples
         rolling_average_low[:-1] = rolling_average_low[1:]
@@ -171,16 +174,18 @@ def update_plot(frame):
 
     # Update lines
 
-    lines_low.set_ydata(rectified_data)
-    lines_mid.set_ydata(rectified_data)
-    lines_high.set_ydata(rectified_data)
+    lines_low.set_ydata(data)
+    lines_mid.set_ydata(data)
+    lines_high.set_ydata(data)
 
     red_colors = (min((rolling_average_low[-1]/10), 0.8),0,0)
     green_colors = (0, min((rolling_average_mid[-1]/10), 0.8), 0)
     blue_colors = (0, 0, min((rolling_average_high[-1]/10), 0.8))
-    print("Red Colors: ", red_colors)
-    print("Green Colors: ", green_colors)
-    print("Blue Colors: ", blue_colors)
+    # print("Red Colors: ", red_colors)
+    # print("Green Colors: ", green_colors)
+    # print("Blue Colors: ", blue_colors)
+    print(max(data))
+    print(min(data))
 
 
     # Update line colors
