@@ -93,12 +93,14 @@ fig = plt.figure()
 
 # ax = plt.subplot(polar=True)  # This is the one I want to normally use, with a polar projection
 
-ax = plt.subplot()
+ax = plt.subplot(polar=True)
 fig.patch.set_facecolor("black")
 ax.set_facecolor("black")
 
 ax.set_xticks([])  # Hide x-axis ticks
 ax.set_yticks([])  # Hide y-axis ticks
+
+plt.xlim(0, 2000)
 plt.ylim(0, 1000)  # Experimenting with different y-lim, having this change dynamically would be cool
 
 x = np.arange(0, 2 * CHUNK, 2)
@@ -131,10 +133,6 @@ rolling_average_high = np.zeros(rolling_window_size)
 def update_plot(frame):
     data = np.frombuffer(stream.read(CHUNK), dtype=np.int16)
 
-    # Rectify the audio data by taking absolute value
-    # rectified_data = np.abs(data)
-    log_data = np.log(np.abs(data))
-    # plt.ylim(0, np.max(log_data) + 1)
 
     # Calculate frequency bins
     frequencies = np.fft.fftfreq(CHUNK, 1 / RATE)
@@ -148,6 +146,10 @@ def update_plot(frame):
     rolling_average_mid = interpolate_list(mid_mask, 1024)
     rolling_average_high = interpolate_list(high_mask, 1024)
 
+    # Rectify the audio data by taking absolute value
+    # rectified_data = np.abs(data)
+    log_data = np.log(np.abs(data))
+    plt.ylim(0, np.max(rolling_average_low) + 30)  # Choosing the rolling average low because it should change slowest
 
     # Calculate rolling average
     for i in range(len(data)):
@@ -177,18 +179,19 @@ def update_plot(frame):
 
     # Update lines
 
-    lines_low.set_ydata(data)
-    lines_mid.set_ydata(data)
-    lines_high.set_ydata(data)
+    lines_low.set_ydata(log_data)
+    lines_mid.set_ydata(rectified_data)
+    lines_high.set_ydata(rolling_average_low)
 
-    red_colors = (min((rolling_average_low[-1]/10), 0.8),0,0)
-    green_colors = (0, min((rolling_average_mid[-1]/10), 0.8), 0)
-    blue_colors = (0, 0, min((rolling_average_high[-1]/10), 0.8))
-    # print("Red Colors: ", red_colors)
-    # print("Green Colors: ", green_colors)
-    # print("Blue Colors: ", blue_colors)
-    print(max(data))
-    print(min(data))
+    red_colors = (min((rolling_average_low[-1]/20), 0.8),min((rolling_average_mid[-1]/150), 0.8),
+                  min((rolling_average_high[-1]/40), 0.2), 0.4)
+    # These divisors should be on sliders and eventually continuous input
+
+    green_colors = (min((rolling_average_high[-1]/5), 0.2), min((rolling_average_mid[-1]/50), 0.8),
+                    min((rolling_average_low[-1]/20), 0.2), 0.4)
+
+    blue_colors = (min((rolling_average_mid[-1]/30), 0.2), min((rolling_average_low[-1]/20), 0.3),
+                   min((rolling_average_high[-1]/100), 0.2), 0.4)
 
 
     # Update line colors
@@ -199,7 +202,7 @@ def update_plot(frame):
     return lines_low, lines_mid, lines_high
 
 # Start animation
-ani = FuncAnimation(fig, update_plot, interval=20, blit=True, cache_frame_data=False)
+ani = FuncAnimation(fig, update_plot, interval=5, blit=True, cache_frame_data=False)
 plt.show()
 # Close the stream and terminate PyAudio
 stream.stop_stream()
