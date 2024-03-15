@@ -93,14 +93,16 @@ fig = plt.figure()
 
 # ax = plt.subplot(polar=True)  # This is the one I want to normally use, with a polar projection
 
-ax = plt.subplot()
+ax = plt.subplot(polar=True)
 fig.patch.set_facecolor("black")
 ax.set_facecolor("black")
 
 ax.set_xticks([])  # Hide x-axis ticks
 ax.set_yticks([])  # Hide y-axis ticks
+plt.ylim(0, 10)
 
 x = np.arange(0, 2 * CHUNK, 2)
+
 lines_low, = ax.plot(x, np.random.rand(CHUNK), alpha=0.9, color="red")
 lines_mid, = ax.plot(x, np.random.rand(CHUNK), alpha=0.9, color="blue")
 lines_high, = ax.plot(x, np.random.rand(CHUNK), alpha=0.9, color="green")
@@ -132,6 +134,7 @@ def update_plot(frame):
     # Rectify the audio data by taking absolute value
     # rectified_data = np.abs(data)
     log_data = np.log(np.abs(data))
+    # plt.ylim(0, np.max(log_data) + 1)
 
     # Calculate frequency bins
     frequencies = np.fft.fftfreq(CHUNK, 1 / RATE)
