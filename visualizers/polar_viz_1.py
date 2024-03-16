@@ -1,10 +1,17 @@
+import sys
 import matplotlib
 import pyaudio
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 from matplotlib.lines import Line2D
+
 from PyQt5 import QtWidgets
+from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import tkinter as tk
 
 """
 Functions
@@ -100,17 +107,16 @@ ax.set_facecolor("black")
 ax.set_xticks([])  # Hide x-axis ticks
 ax.set_yticks([])  # Hide y-axis ticks
 
-plt.xlim(0, 2000)
+plt.xlim(0, 1.564)
 plt.ylim(0, 1000)  # Experimenting with different y-lim, having this change dynamically would be cool
 
 x = np.arange(0, 2 * CHUNK, 2)
 
-lines_low, = ax.plot(x, np.random.rand(CHUNK), alpha=0.9, color="red")
-lines_mid, = ax.plot(x, np.random.rand(CHUNK), alpha=0.9, color="blue")
-lines_high, = ax.plot(x, np.random.rand(CHUNK), alpha=0.9, color="green")
+lines_low, = ax.plot(x, np.random.rand(CHUNK), alpha=0.9, color="red", linestyle=":")
+lines_mid, = ax.plot(x, np.random.rand(CHUNK), alpha=0.9, color="blue", linestyle="-")
+lines_high, = ax.plot(x, np.random.rand(CHUNK), alpha=0.4, color="green", linestyle="--")
 
 lines = [lines_low, lines_mid, lines_high]
-
 
 # Grab initial data
 data = np.frombuffer(stream.read(CHUNK), dtype=np.int16)
@@ -132,10 +138,14 @@ rolling_average_high = np.zeros(rolling_window_size)
 # Update function
 def update_plot(frame):
     data = np.frombuffer(stream.read(CHUNK), dtype=np.int16)
-
+    # Rectify the data
+    rectified_data = np.abs(data)
+    # Rectify the audio data by taking absolute value
+    log_data = np.log(np.abs(data))
 
     # Calculate frequency bins
     frequencies = np.fft.fftfreq(CHUNK, 1 / RATE)
+    spectrum = np.fft.fft(log_data)
 
     # Calculate average amplitudes in frequency bins
     low_mask = (frequencies >= LOW_FREQ[0]) & (frequencies <= LOW_FREQ[1])
@@ -146,26 +156,11 @@ def update_plot(frame):
     rolling_average_mid = interpolate_list(mid_mask, 1024)
     rolling_average_high = interpolate_list(high_mask, 1024)
 
-    # Rectify the audio data by taking absolute value
-    # rectified_data = np.abs(data)
-    log_data = np.log(np.abs(data))
-    plt.ylim(0, np.max(rolling_average_low) + 30)  # Choosing the rolling average low because it should change slowest
 
     # Calculate rolling average
     for i in range(len(data)):
-        # Calculate frequency bins
-        frequencies = np.fft.fftfreq(CHUNK, 1 / RATE)
-        # Perform FFT
-        spectrum = np.fft.fft(data)
-
-        # Calculate average amplitudes in frequency bins
-        low_mask = (frequencies >= LOW_FREQ[0]) & (frequencies <= LOW_FREQ[1])
-        mid_mask = (frequencies >= MID_FREQ[0]) & (frequencies <= MID_FREQ[1])
-        high_mask = (frequencies >= HIGH_FREQ[0]) & (frequencies <= HIGH_FREQ[1])
-
-        # Add current sample to rolling window
         rolling_window[:-1] = rolling_window[1:]  # Shift values to the left
-        rolling_window[-1] = data[i]
+        rolling_window[-1] = log_data[i]
 
         # Calculate rolling average of the last 50 samples
         rolling_average_low[:-1] = rolling_average_low[1:]
@@ -183,12 +178,17 @@ def update_plot(frame):
     lines_mid.set_ydata(rectified_data)
     lines_high.set_ydata(rolling_average_low)
 
+
+    plt.ylim(0, max(rectified_data))
+    # Choosing the rolling average low because it should change slowest
+
+
     red_colors = (min((rolling_average_low[-1]/20), 0.8),min((rolling_average_mid[-1]/150), 0.8),
                   min((rolling_average_high[-1]/40), 0.2), 0.4)
     # These divisors should be on sliders and eventually continuous input
 
-    green_colors = (min((rolling_average_high[-1]/5), 0.2), min((rolling_average_mid[-1]/50), 0.8),
-                    min((rolling_average_low[-1]/20), 0.2), 0.4)
+    green_colors = (min((rolling_average_high[-1]/50), 0.2), min((rolling_average_mid[-1]/20), 0.2),
+                    min((rolling_average_low[-1]/60), 0.2), 0.4)
 
     blue_colors = (min((rolling_average_mid[-1]/30), 0.2), min((rolling_average_low[-1]/20), 0.3),
                    min((rolling_average_high[-1]/100), 0.2), 0.4)
@@ -203,6 +203,10 @@ def update_plot(frame):
 
 # Start animation
 ani = FuncAnimation(fig, update_plot, interval=5, blit=True, cache_frame_data=False)
+
+# Set the animation window to be borderless
+fig_manager = plt.get_current_fig_manager()
+
 plt.show()
 # Close the stream and terminate PyAudio
 stream.stop_stream()
