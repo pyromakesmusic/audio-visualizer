@@ -1,5 +1,6 @@
 import sys
 import matplotlib
+import cv2
 import pyaudio
 import numpy as np
 import matplotlib.pyplot as plt
@@ -49,6 +50,8 @@ class AudioVis:
     def __init__(self):
         self.frequencies = None
         self.spectrum = None
+        # Initialize OpenCV video capture
+        self.cap = cv2.VideoCapture(0)
 
         # Set the Matplotlib backend to Qt
         plt.switch_backend('Qt5Agg')
@@ -98,26 +101,34 @@ class AudioVis:
         # Create plot
         plt.rcParams["figure.figsize"] = (20, 20)
         plt.rcParams["figure.facecolor"] = "black"
-        # fig, ax = plt.subplots(subplot_kw={'projection': 'polar'})
-        self.fig = plt.figure()
 
-        # ax = plt.subplot(polar=True)  # This is the one I want to normally use, with a polar projection
+        # self.fig, self.ax = plt.subplots(subplot_kw={"projection" : "polar"})  # This is the one I want to normally use, with a polar projection
+        self.fig, self.ax = plt.subplots()
 
-        self.ax = plt.subplot(polar=True)
-        self.fig.patch.set_facecolor("black")
-        self.ax.set_facecolor("black")
+
+        self.fig.patch.set_facecolor((1,1,1,0))  # Trying to make transparent
+        self.ax.set_facecolor((1,1,1,0))  # Trying to make transparent
 
         self.ax.set_xticks([])  # Hide x-axis ticks
         self.ax.set_yticks([])  # Hide y-axis ticks
 
-        plt.xlim(0, 1.564)
-        plt.ylim(0, 1000)  # Experimenting with different y-lim, having this change dynamically would be cool
+        self.ret, self.frame = self.cap.read()  # Read a frame from the camera
+
+        if self.ret:
+            # Display the frame
+            self.ax.imshow(self.frame)
+
+        plt.xlim(0,640)
+        plt.ylim(0,480)
+
+        # plt.xlim(0, 1.564)
+        # plt.ylim(0, 1000)  # Experimenting with different y-lim, having this change dynamically would be cool
 
         x = np.arange(0, 2 * self.CHUNK, 2)
 
         self.lines_low, = self.ax.plot(x, np.random.rand(self.CHUNK), alpha=0.9, color="red", linestyle=":")
-        self.lines_mid, = self.ax.plot(x, np.random.rand(self.CHUNK), alpha=0.9, color="blue", linestyle="-")
-        self.lines_high, = self.ax.plot(x, np.random.rand(self.CHUNK), alpha=0.4, color="green", linestyle="--")
+        self.lines_mid, = self.ax.plot(x, np.random.rand(self.CHUNK), alpha=0.9, color="blue", linestyle="dashdot")
+        self.lines_high, = self.ax.plot(x, np.random.rand(self.CHUNK), alpha=0.4, color="green", linestyle="solid")
 
         self.lines = [self.lines_low, self.lines_mid, self.lines_high]
 
@@ -147,6 +158,12 @@ class AudioVis:
 
     # Update function
     def update_plot(self, frame):
+        self.ret, self.frame = self.cap.read()  # Read a frame from the camera
+
+        if self.ret:
+            # Display the frame
+            self.ax.imshow(cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGB), aspect='auto')
+
         self.data = np.frombuffer(self.stream.read(self.CHUNK), dtype=np.int16)
         # Rectify the data
         self.rectified_data = np.abs(self.data)
@@ -191,7 +208,7 @@ class AudioVis:
         self.lines_mid.set_ydata(self.rectified_data)
         self.lines_high.set_ydata(self.rolling_average_low)
 
-        plt.ylim(0, max(self.rectified_data))
+        # plt.ylim(0, max(self.rectified_data))
         # Choosing the rolling average low because it should change slowest
 
         red_colors = (min((self.rolling_average_low[-1] / 5), 0.1), min((self.rolling_average_mid[-1] / 15), 0.1),
@@ -216,6 +233,7 @@ class AudioVis:
 
         # Set the animation window to be borderless
         fig_manager = plt.get_current_fig_manager()
+        fig_manager.full_screen_toggle()
 
         plt.show()
         # Close the stream and terminate PyAudio
@@ -223,6 +241,7 @@ class AudioVis:
         self.stream.close()
         self.p.terminate()
         plt.close()
+        self.cap.release()
 
 if __name__ == "__main__":
     vis = AudioVis()
