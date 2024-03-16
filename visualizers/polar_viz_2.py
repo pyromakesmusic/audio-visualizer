@@ -127,7 +127,12 @@ class AudioVis:
         # Rectify the data
         self.rectified_data = np.abs(self.data)
         # Rectify the audio data by taking absolute value
-        self.log_data = np.log(np.abs(self.data))
+        try:
+            self.log_data = np.log(np.abs(self.data))
+        except ValueError as e:
+            # Handle divide by zero error
+            self.log_data = np.abs(self.data)
+            # You can choose to log the error, display a message, or take any other appropriate action.
 
         # Initialize rolling average
         self.ROLLING_WINDOW_SIZE = int(self.ROLLING_WINDOW_RATIO * self.CHUNK)
@@ -145,12 +150,16 @@ class AudioVis:
         self.data = np.frombuffer(self.stream.read(self.CHUNK), dtype=np.int16)
         # Rectify the data
         self.rectified_data = np.abs(self.data)
-        # Rectify the audio data by taking absolute value
-        self.log_data = np.log(np.abs(self.data))
+
+        try:
+            self.log_data = np.log(np.abs(self.data))
+        except ValueError as e:
+            # Handle divide by zero error
+            self.log_data = np.abs(self.data)
 
         # Calculate frequency bins
         self.frequencies = np.fft.fftfreq(self.CHUNK, 1 / self.RATE)
-        self.spectrum = np.fft.fft(self.log_data)
+        self.spectrum = np.fft.fft(self.data)
 
         # Calculate average amplitudes in frequency bins
         low_mask = (self.frequencies >= self.LOW_FREQ[0]) & (self.frequencies <= self.LOW_FREQ[1])
@@ -164,11 +173,11 @@ class AudioVis:
         # Calculate rolling average
         for i in range(len(self.data)):
             self.rolling_window[:-1] = self.rolling_window[1:]  # Shift values to the left
-            self.rolling_window[-1] = self.log_data[i]
+            self.rolling_window[-1] = self.data[i]
 
             # Calculate rolling average of the last 50 samples
             self.rolling_average_low[:-1] = self.rolling_average_low[1:]
-            self.rolling_average_low[i - 1] = self.np.mean(np.abs(self.spectrum[low_mask]))
+            self.rolling_average_low[i - 1] = np.mean(np.abs(self.spectrum[low_mask]))
 
             self.rolling_average_mid[:-1] = self.rolling_average_mid[1:]
             self.rolling_average_mid[i - 1] = np.mean(np.abs(self.spectrum[mid_mask]))
@@ -178,22 +187,21 @@ class AudioVis:
 
         # Update lines
 
-        self.lines_low.set_ydata(self.log_data)
+        self.lines_low.set_ydata(self.data)
         self.lines_mid.set_ydata(self.rectified_data)
         self.lines_high.set_ydata(self.rolling_average_low)
 
         plt.ylim(0, max(self.rectified_data))
         # Choosing the rolling average low because it should change slowest
 
-        red_colors = (min((self.rolling_average_low[-1] / 20), 0.8), min((self.rolling_average_mid[-1] / 150), 0.8),
-                      min((self.rolling_average_high[-1] / 40), 0.2), 0.4)
+        red_colors = (min((self.rolling_average_low[-1] / 5), 0.1), min((self.rolling_average_mid[-1] / 15), 0.1),
+                      min((self.rolling_average_high[-1] / 10), 0.1), 0.4)
         # These divisors should be on sliders and eventually continuous input
 
-        green_colors = (min((self.rolling_average_high[-1] / 50), 0.2), min((self.rolling_average_mid[-1] / 20), 0.2),
-                        min((self.rolling_average_low[-1] / 60), 0.2), 0.4)
+        green_colors = (min((self.rolling_average_high[-1] / 5), 0.1), min((self.rolling_average_mid[-1] / 2), 0.1),
+                        min((self.rolling_average_low[-1] / 8), 0.1), 0.4)
 
-        blue_colors = (min((self.rolling_average_mid[-1] / 30), 0.2), min((self.rolling_average_low[-1] / 20), 0.3),
-                       min((self.rolling_average_high[-1] / 100), 0.2), 0.4)
+        blue_colors = (0, 0, min((self.rolling_average_high[-1] / 10), 0.1), 0.8)
 
         # Update line colors
         self.lines_low.set_color(red_colors)
@@ -215,3 +223,7 @@ class AudioVis:
         self.stream.close()
         self.p.terminate()
         plt.close()
+
+if __name__ == "__main__":
+    vis = AudioVis()
+    vis.start_animation()
