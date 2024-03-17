@@ -3,15 +3,16 @@ import matplotlib
 import cv2
 import pyaudio
 import numpy as np
+
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
+from matplotlib.figure import Figure
 from matplotlib.lines import Line2D
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import tkinter as tk
 
 """
@@ -46,8 +47,9 @@ def interpolate_list(original_list, new_length):
 MAIN
 """
 
-class AudioVis:
+class AudioVis(QWidget):
     def __init__(self):
+        super().__init__()
         self.frequencies = None
         self.spectrum = None
         # Initialize OpenCV video capture
@@ -103,7 +105,9 @@ class AudioVis:
         plt.rcParams["figure.facecolor"] = "black"
 
         # self.fig, self.ax = plt.subplots(subplot_kw={"projection" : "polar"})  # This is the one I want to normally use, with a polar projection
-        self.fig, self.ax = plt.subplots()
+        self.fig = Figure(facecolor="none")
+        # self.ax = self.fig.add_subplot(111, polar=True)
+        self.ax = self.fig.add_subplot(111)
 
 
         self.fig.patch.set_facecolor((1,1,1,0))  # Trying to make transparent
@@ -112,14 +116,29 @@ class AudioVis:
         self.ax.set_xticks([])  # Hide x-axis ticks
         self.ax.set_yticks([])  # Hide y-axis ticks
 
-        self.ret, self.frame = self.cap.read()  # Read a frame from the camera
+        self.canvas = FigureCanvas(self.fig)
+
+
+        # Read frame from camera
+        self.ret, self.frame = self.cap.read()
+        self.bg_img = None
 
         if self.ret:
-            # Display the frame
-            self.ax.imshow(self.frame)
+            # Convert frame to RGB
+            frame_rgb = cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGB)
 
-        plt.xlim(0,640)
-        plt.ylim(0,480)
+            # Display the frame as background image
+            if self.bg_img is None:
+                self.bg_img = self.ax.imshow(frame_rgb)
+            else:
+                self.bg_img.set_data(frame_rgb)
+
+            # Update plot
+            self.canvas.draw()
+
+
+        plt.xlim(0, 600)
+        plt.ylim(0, 400)
 
         # plt.xlim(0, 1.564)
         # plt.ylim(0, 1000)  # Experimenting with different y-lim, having this change dynamically would be cool
@@ -156,13 +175,15 @@ class AudioVis:
         self.rolling_average_mid = np.zeros(self.ROLLING_WINDOW_SIZE)
         self.rolling_average_high = np.zeros(self.ROLLING_WINDOW_SIZE)
 
+        # Set up layout
+        self.layout = QVBoxLayout()
+        self.layout.addWidget(self.canvas)
+        self.setLayout(self.layout)
+
+        self.start_animation()
+
     # Update function
     def update_plot(self, frame):
-        self.ret, self.frame = self.cap.read()  # Read a frame from the camera
-
-        if self.ret:
-            # Display the frame
-            self.ax.imshow(cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGB), aspect='auto')
 
         self.data = np.frombuffer(self.stream.read(self.CHUNK), dtype=np.int16)
         # Rectify the data
@@ -225,17 +246,39 @@ class AudioVis:
         self.lines_mid.set_color(green_colors)
         self.lines_high.set_color(blue_colors)
 
+        # Read frame from camera
+        self.ret, self.frame = self.cap.read()
+
+        if self.ret:
+            # Convert frame to RGB
+            frame_rgb = cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGB)
+
+            # Display the frame as background image
+            if self.bg_img is None:
+                self.bg_img = self.ax.imshow(frame_rgb)
+            else:
+                self.bg_img.set_data(frame_rgb)
+
+            # Update plot
+            self.canvas.draw()
+
+
         return self.lines_low, self.lines_mid, self.lines_high
 
     def start_animation(self):
         # Start animation
-        self.ani = FuncAnimation(self.fig, self.update_plot, interval=5, blit=True, cache_frame_data=False)
+        self.ani = FuncAnimation(self.fig, self.update_plot, interval=50, blit=True, cache_frame_data=False)
 
         # Set the animation window to be borderless
         fig_manager = plt.get_current_fig_manager()
         fig_manager.full_screen_toggle()
-
         plt.show()
+
+        # Close the stream and terminate PyAudio when the application is closed
+        self.canvas.mpl_connect('close_event', self.close_event)
+
+
+    def close_event(self):
         # Close the stream and terminate PyAudio
         self.stream.stop_stream()
         self.stream.close()
@@ -244,5 +287,9 @@ class AudioVis:
         self.cap.release()
 
 if __name__ == "__main__":
-    vis = AudioVis()
-    vis.start_animation()
+    app = QApplication(sys.argv)
+    mainWindow = QMainWindow()
+    mainWindow.setGeometry(100, 100, 800, 600)
+    mainWindow.setCentralWidget(AudioVis())
+    mainWindow.show()
+    sys.exit(app.exec_())
