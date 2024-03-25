@@ -12,12 +12,52 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 from PyQt5 import QtWidgets
-from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget
+from PyQt5.QtWidgets import QApplication, QLabel, QMainWindow, QVBoxLayout, QWidget
+from PyQt5.QtGui import QPixmap, QImage, QColor
+from PyQt5.QtCore import Qt
 import tkinter as tk
 
 """
 Functions
 """
+
+def apply_chromatic_aberration(image):
+    # Convert the image to QImage
+    qimage = QImage(image)
+
+    # Get the dimensions of the image
+    width = qimage.width()
+    height = qimage.height()
+
+    # Create a new QImage to store the result
+    result = QImage(width, height, QImage.Format_ARGB32)
+
+    # Iterate over each pixel in the image
+    for y in range(height):
+        for x in range(width):
+            # Get the color of the pixel
+            color = QColor(qimage.pixel(x, y))
+
+            # Apply chromatic aberration by shifting colors
+            red = color.red()
+            green = color.green()
+            blue = color.blue()
+
+            # Adjust the pixel colors to simulate chromatic aberration
+            new_red = red  # Red channel unchanged
+            new_green = green - 30  # Green channel shifted towards blue
+            new_blue = blue + 30  # Blue channel shifted towards green
+
+            # Clamp the values to ensure they stay within the valid range (0-255)
+            new_red = min(255, max(0, new_red))
+            new_green = min(255, max(0, new_green))
+            new_blue = min(255, max(0, new_blue))
+
+            # Set the color of the pixel in the result image
+            result.setPixel(x, y, QColor(new_red, new_green, new_blue).rgb())
+
+    return result
+
 
 #  Interpolation function
 def interpolate_list(original_list, new_length):
@@ -78,7 +118,7 @@ class AudioVis(QWidget):
         self.RATE = 44100
         self.CHUNK = 1024
 
-        self.ROLLING_WINDOW_RATIO = 0.05  # Ratio of the chunk size for the rolling window
+        self.ROLLING_WINDOW_RATIO = 0.1  # Ratio of the chunk size for the rolling window
 
         # Define frequency bins
         self.LOW_FREQ = (20, 200)  # Low frequency range
@@ -125,7 +165,7 @@ class AudioVis(QWidget):
 
         if self.ret:
             # Convert frame to RGB
-            frame_rgb = cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGB)
+            frame_rgb = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)
 
             # Display the frame as background image
             if self.bg_img is None:
@@ -134,10 +174,10 @@ class AudioVis(QWidget):
                 self.bg_img.set_data(frame_rgb)
 
             # Update plot
-            self.canvas.draw()
+            # self.canvas.draw()
 
 
-        plt.xlim(0, 600)
+        plt.xlim(0, 20)
         plt.ylim(0, 400)
 
         # plt.xlim(0, 1.564)
@@ -180,6 +220,21 @@ class AudioVis(QWidget):
         self.layout.addWidget(self.canvas)
         self.setLayout(self.layout)
 
+        # Create an image
+        self.pixmap = QPixmap(400, 400)
+        self.pixmap.fill(Qt.white)
+
+        # Apply chromatic aberration to the image
+        self.aberrated_image = apply_chromatic_aberration(self.pixmap.toImage())
+
+        # Create a label to display the image
+        self.label = QLabel(self)
+        self.label.setPixmap(QPixmap.fromImage(self.aberrated_image))
+
+        self.setCentralWidget(self.label)
+
+
+        # Start the animation
         self.start_animation()
 
     # Update function
@@ -251,7 +306,7 @@ class AudioVis(QWidget):
 
         if self.ret:
             # Convert frame to RGB
-            frame_rgb = cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGB)
+            frame_rgb = cv2.cvtColor(self.frame, cv2.COLOR_BGR2YUV_I420)
 
             # Display the frame as background image
             if self.bg_img is None:
@@ -272,7 +327,6 @@ class AudioVis(QWidget):
         # Set the animation window to be borderless
         fig_manager = plt.get_current_fig_manager()
         fig_manager.full_screen_toggle()
-        plt.show()
 
         # Close the stream and terminate PyAudio when the application is closed
         self.canvas.mpl_connect('close_event', self.close_event)
@@ -288,8 +342,9 @@ class AudioVis(QWidget):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
+    av = AudioVis()
     mainWindow = QMainWindow()
-    mainWindow.setGeometry(100, 100, 800, 600)
-    mainWindow.setCentralWidget(AudioVis())
+    mainWindow.setGeometry(10, 10, 1920, 1080)
+    mainWindow.setCentralWidget(av)
     mainWindow.show()
     sys.exit(app.exec_())
